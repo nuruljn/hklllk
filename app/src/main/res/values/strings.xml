@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">tubes</string>
+    <string name="title_activity_maps">MapsActivity</string>
+</resources>
