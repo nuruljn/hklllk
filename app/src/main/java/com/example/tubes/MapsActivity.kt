@@ -40,22 +40,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
-    private var latitude:Double=0.toDouble()
-    private var longitude:Double=0.toDouble()
+    private var latitude: Double = 0.toDouble()
+    private var longitude: Double = 0.toDouble()
 
-    private lateinit var mLastLocation:Location
-    private var mMarker: Marker?=null
+    private lateinit var mLastLocation: Location
+    private var mMarker: Marker? = null
 
     //Location
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     lateinit var locationRequest: LocationRequest
     lateinit var locationCallback: LocationCallback
 
-    companion object{
+    companion object {
         private const val MY_PERMISSION_CODE: Int = 1000;
     }
 
-    lateinit var mService:IGoogleAPIService
+    lateinit var mService: IGoogleAPIService
     internal lateinit var currentPlaces: MyPlaces
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,14 +66,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
-                .findFragmentById(R.id.map) as SupportMapFragment
+            .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        //Init Service
+        //inisialisasi Service
         mService = Common.googleApiService
 
         //Request runtime permission
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkLocationPermission()) {
                 buildLocationRequest();
                 buildLocationCallBack();
@@ -84,6 +84,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     locationCallback,
                     Looper.myLooper()
                 );
+
             } else {
                 buildLocationRequest();
                 buildLocationCallBack();
@@ -97,7 +98,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
             findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-                .setOnNavigationItemSelectedListener { item ->
+                .setOnNavigationItemReselectedListener { item ->
                     when (item.itemId) {
                         R.id.action_hotel -> nearByPlace("hotel")
                         R.id.action_tour -> nearByPlace("tour")
@@ -105,28 +106,31 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         R.id.action_mall -> nearByPlace("mall")
                         R.id.action_restaurant -> nearByPlace("restaurant")
                     }
+
                 }
 
         }
 
     }
 
-    private fun nearByPlace(typeplace: String): Boolean {
+    private fun nearByPlace(typePlace:String) {
 
-        //clear all marker on map
+        //menghapus semua marker di map
         mMap.clear()
         //build URL request base on location
-        val url = getUrl(latitude,longitude,typeplace)
+        val url = getUrl(latitude, longitude, typePlace)
 
-        mService.getNearbyPlaces(url).enqueue(object : Callback<MyPlaces>{
-                override fun onFailure(call: Call<MyPlaces>?, response: Response<MyPlaces>?) {
-                    currentPlaces = response!!.body()!!
+        mService.getNearbyPlaces(url)
+            .enqueue(object : retrofit2.Callback<MyPlaces> {
+                override fun onResponse(
+                    call: retrofit2.Call<MyPlaces>,
+                    response: Response<MyPlaces>
+                ) {
+                    currentPlaces = response.body()!!
 
-                    if(response!!.isSuccessful)
-                    {
+                    if (response!!.isSuccessful) {
 
-                        for(i in 0 until response!!.body()!!.results!!.size)
-                        {
+                        for (i in 0 until response!!.body()!!.results!!.size) {
                             val markerOptions = MarkerOptions()
                             val googlePlaces = response.body()!!.results!![i]
                             val lat = googlePlaces.geometry!!.location!!.lat
@@ -136,43 +140,56 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                             markerOptions.position(latLng)
                             markerOptions.title(placeName)
-                            if(typeplace.equals("restaurant"))
+                            if (typePlace.equals("restaurant"))
                                 markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_restaurant_24))
-                            else if(typeplace.equals("market"))
+                            else if (typePlace.equals("market"))
                                 markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_shopping_cart_24))
-                            else if(typeplace.equals("mall"))
+                            else if (typePlace.equals("mall"))
                                 markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_local_mall_24))
-                            else if(typeplace.equals("tour"))
+                            else if (typePlace.equals("tour"))
                                 markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_tour_24))
-                            else if(typeplace.equals("hotel"))
+                            else if (typePlace.equals("hotel"))
                                 markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_hotel_24))
                             else
-                                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                                markerOptions.icon(
+                                    BitmapDescriptorFactory.defaultMarker(
+                                        BitmapDescriptorFactory.HUE_BLUE
+                                    )
+                                )
 
                             markerOptions.snippet(i.toString())
 
                             mMap!!.addMarker(markerOptions)
 
-
                         }
-                        mMap!!.moveCamera(CameraUpdateFactory.newLatLng(LatLng))
+                        mMap!!.moveCamera(
+                            CameraUpdateFactory.newLatLng(
+                                LatLng(
+                                    latitude,
+                                    longitude
+                                )
+                            )
+                        )
                         mMap!!.animateCamera((CameraUpdateFactory.zoomTo(11f)))
+
+
                     }
                 }
 
-                override fun onFailure(call: Call<MyPlaces>?, t: Throwable?) {
-                    Toast.makeText(baseContext,""+t!!.message,Toast.LENGTH_SHORT).show()
+                override fun onFailure(call: retrofit2.Call<MyPlaces>, t: Throwable) {
+                    Toast.makeText(baseContext, "" + t.message, Toast.LENGTH_SHORT).show()
                 }
-        })
+
+            })
     }
 
-    private fun getUrl(latitude: Double, longitude: Double, typeplace: String): String {
+    private fun getUrl(latitude: Double, longitude: Double, typePlace: String): String {
 
         val googlePlaceUrl = StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json")
-        googlePlaceUrl.append("?&location=$latitude,$longitude")
-        googlePlaceUrl.append("&radius=10000")
-        googlePlaceUrl.append("&type=$typeplace")
-        googlePlaceUrl.append("&key=AIzaSyCqB59NPX3LPKFMllqbRiaAPe-3ea39sfc")
+        googlePlaceUrl.append("?location=$latitude,$longitude")
+        googlePlaceUrl.append("&radius=10000") //10 km
+        googlePlaceUrl.append("&type=$typePlace")
+        googlePlaceUrl.append("&key=AIzaSyAONrJR-6-p3jxlQpnqGU7cN_Ph9xfoz_U")
 
         Log.d("URL_DEBUG",googlePlaceUrl.toString())
         return  googlePlaceUrl.toString()
@@ -207,6 +224,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         }
 
+    }
+
+    override fun onStop() {
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        super.onStop()
     }
 
     private fun buildLocationRequest() {

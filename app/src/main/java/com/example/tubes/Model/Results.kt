@@ -13,5 +13,5 @@ class Results {
     var icon:String?=null
     var geometry:Geometry?=null
     var photos:Array<Photos>?=null
-    var business_status:String?=null
+    var id:String?=null
 }
