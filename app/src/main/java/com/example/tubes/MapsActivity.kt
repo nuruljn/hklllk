@@ -56,7 +56,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     lateinit var mService: IGoogleAPIService
-    internal lateinit var currentPlaces: MyPlaces
+    internal lateinit var currentPlace: MyPlaces
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,7 +98,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
             findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-                .setOnNavigationItemReselectedListener { item ->
+                .setOnNavigationItemSelectedListener { item ->
                     when (item.itemId) {
                         R.id.action_hotel -> nearByPlace("hotel")
                         R.id.action_tour -> nearByPlace("tour")
@@ -106,7 +106,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         R.id.action_mall -> nearByPlace("mall")
                         R.id.action_restaurant -> nearByPlace("restaurant")
                     }
-
+                    true
                 }
 
         }
@@ -126,30 +126,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     call: retrofit2.Call<MyPlaces>,
                     response: Response<MyPlaces>
                 ) {
-                    currentPlaces = response.body()!!
+                    currentPlace = response!!.body()!!
 
                     if (response!!.isSuccessful) {
 
                         for (i in 0 until response!!.body()!!.results!!.size) {
                             val markerOptions = MarkerOptions()
-                            val googlePlaces = response.body()!!.results!![i]
-                            val lat = googlePlaces.geometry!!.location!!.lat
-                            val lng = googlePlaces.geometry!!.location!!.lng
-                            val placeName = googlePlaces.name
+                            val googlePlace = response.body()!!.results!![i]
+                            val lat = googlePlace.geometry!!.location!!.lat
+                            val lng = googlePlace.geometry!!.location!!.lng
+                            val placeName = googlePlace.name
                             val latLng = LatLng(lng, lat)
 
                             markerOptions.position(latLng)
                             markerOptions.title(placeName)
                             if (typePlace.equals("restaurant"))
-                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_restaurant_24))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_restaurant))
                             else if (typePlace.equals("market"))
-                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_shopping_cart_24))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_shopping))
                             else if (typePlace.equals("mall"))
-                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_local_mall_24))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_local_mall))
                             else if (typePlace.equals("tour"))
-                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_tour_24))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_tour))
                             else if (typePlace.equals("hotel"))
-                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_hotel_24))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_hotel))
                             else
                                 markerOptions.icon(
                                     BitmapDescriptorFactory.defaultMarker(
@@ -160,24 +160,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                             markerOptions.snippet(i.toString())
 
                             mMap!!.addMarker(markerOptions)
+                            mMap!!.moveCamera(CameraUpdateFactory.newLatLng(latLng))
+                            mMap!!.animateCamera((CameraUpdateFactory.zoomTo(15f)))
 
                         }
-                        mMap!!.moveCamera(
-                            CameraUpdateFactory.newLatLng(
-                                LatLng(
-                                    latitude,
-                                    longitude
-                                )
-                            )
-                        )
-                        mMap!!.animateCamera((CameraUpdateFactory.zoomTo(11f)))
+
 
 
                     }
                 }
 
                 override fun onFailure(call: retrofit2.Call<MyPlaces>, t: Throwable) {
-                    Toast.makeText(baseContext, "" + t.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(baseContext, "" + t!!.message, Toast.LENGTH_SHORT).show()
                 }
 
             })
@@ -189,7 +183,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         googlePlaceUrl.append("?location=$latitude,$longitude")
         googlePlaceUrl.append("&radius=10000") //10 km
         googlePlaceUrl.append("&type=$typePlace")
-        googlePlaceUrl.append("&key=AIzaSyAONrJR-6-p3jxlQpnqGU7cN_Ph9xfoz_U")
+        googlePlaceUrl.append("&key=AIzaSyDz-Kx0j8zGFzb7YsrUQA2KT0OWQYHZ3og")
 
         Log.d("URL_DEBUG",googlePlaceUrl.toString())
         return  googlePlaceUrl.toString()

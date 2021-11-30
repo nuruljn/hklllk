@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">tubes</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="market">Market</string>
+    <string name="restaurant">Restaurant</string>
+    <string name="hotel">Hotel</string>
+    <string name="mall">Mall</string>
+    <string name="tour">Tour</string>
 </resources>
