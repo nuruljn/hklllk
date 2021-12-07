@@ -1,13 +1,16 @@
 package com.example.tubes
 
 import android.content.pm.PackageManager
+import android.graphics.Camera
 import android.location.Location
 //import android.location.LocationRequest
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
+import android.telecom.Call
 import android.util.Log
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -30,6 +33,8 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import retrofit2.Response
 import java.lang.StringBuilder
+import java.util.jar.Manifest
+import javax.security.auth.callback.Callback
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -42,15 +47,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mMarker: Marker? = null
 
     //Location
-    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    private lateinit var locationRequest: LocationRequest
-    private lateinit var locationCallback: LocationCallback
+    lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    lateinit var locationRequest: LocationRequest
+    lateinit var locationCallback: LocationCallback
 
     companion object {
-        private const val MY_PERMISSION_CODE: Int = 1000
+        private const val MY_PERMISSION_CODE: Int = 1000;
     }
 
-    private lateinit var mService: IGoogleAPIService
+    lateinit var mService: IGoogleAPIService
     internal lateinit var currentPlaces: MyPlaces
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,22 +75,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         //Request runtime permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkLocationPermission()) {
-                buildLocationRequest()
-                buildLocationCallBack()
+                buildLocationRequest();
+                buildLocationCallBack();
 
                 fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-                fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
+                fusedLocationProviderClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    Looper.myLooper()
+                );
 
             } else {
-                buildLocationRequest()
-                buildLocationCallBack()
+                buildLocationRequest();
+                buildLocationCallBack();
                 fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-                fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
+                fusedLocationProviderClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    Looper.myLooper()
+                );
             }
 
 
             findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-                .setOnItemReselectedListener { item ->
+                .setOnNavigationItemReselectedListener { item ->
                     when (item.itemId) {
                         R.id.action_hotel -> nearByPlace("hotel")
                         R.id.action_tour -> nearByPlace("tour")
@@ -93,6 +106,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         R.id.action_mall -> nearByPlace("mall")
                         R.id.action_restaurant -> nearByPlace("restaurant")
                     }
+
                 }
 
         }
@@ -114,9 +128,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 ) {
                     currentPlaces = response.body()!!
 
-                    if (response.isSuccessful) {
+                    if (response!!.isSuccessful) {
 
-                        for (i in response.body()!!.results!!.indices) {
+                        for (i in 0 until response!!.body()!!.results!!.size) {
                             val markerOptions = MarkerOptions()
                             val googlePlaces = response.body()!!.results!![i]
                             val lat = googlePlaces.geometry!!.location!!.lat
@@ -126,26 +140,37 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                             markerOptions.position(latLng)
                             markerOptions.title(placeName)
-                            when (typePlace) {
-                                "restaurant" -> markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_restaurant))
-                                "market" -> markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_market))
-                                "mall" -> markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_mall))
-                                "tour" -> markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_tour))
-                                "hotel" -> markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_hotel))
-                                else -> markerOptions.icon(
+                            if (typePlace.equals("restaurant"))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_restaurant_24))
+                            else if (typePlace.equals("market"))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_shopping_cart_24))
+                            else if (typePlace.equals("mall"))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_local_mall_24))
+                            else if (typePlace.equals("tour"))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_tour_24))
+                            else if (typePlace.equals("hotel"))
+                                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_hotel_24))
+                            else
+                                markerOptions.icon(
                                     BitmapDescriptorFactory.defaultMarker(
                                         BitmapDescriptorFactory.HUE_BLUE
                                     )
                                 )
-                            }
 
                             markerOptions.snippet(i.toString())
 
-                            mMap.addMarker(markerOptions)
-                            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-                            mMap.animateCamera((CameraUpdateFactory.zoomTo(11f)))
-                        }
+                            mMap!!.addMarker(markerOptions)
 
+                        }
+                        mMap!!.moveCamera(
+                            CameraUpdateFactory.newLatLng(
+                                LatLng(
+                                    latitude,
+                                    longitude
+                                )
+                            )
+                        )
+                        mMap!!.animateCamera((CameraUpdateFactory.zoomTo(11f)))
 
 
                     }
@@ -174,7 +199,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun buildLocationCallBack() {
         locationCallback = object : LocationCallback(){
             override fun onLocationResult(p0: LocationResult?) {
-                mLastLocation = p0!!.locations[p0.locations.size-1] //Get Last Location
+                mLastLocation =  p0!!.locations.get(p0!!.locations.size-1) //Get Last Location
 
                 if(mMarker != null){
                     mMarker!!.remove()
@@ -189,11 +214,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title("Your Position")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
 
-                mMarker = mMap.addMarker(markerOptions)
+                mMarker = mMap!!.addMarker(markerOptions)
 
                 //Move Camera
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-                mMap.animateCamera(CameraUpdateFactory.zoomTo(11f))
+                mMap!!.animateCamera(CameraUpdateFactory.zoomTo(11f))
             }
 
 
@@ -217,18 +242,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun checkLocationPermission() : Boolean{
 
-        return if(ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if(ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
             if(ActivityCompat.shouldShowRequestPermissionRationale(this,android.Manifest.permission.ACCESS_FINE_LOCATION))
                 ActivityCompat.requestPermissions(this, arrayOf(
-                    android.Manifest.permission.ACCESS_FINE_LOCATION
+                        android.Manifest.permission.ACCESS_FINE_LOCATION
                 ), MY_PERMISSION_CODE)
             else
                 ActivityCompat.requestPermissions(this, arrayOf(
                     android.Manifest.permission.ACCESS_FINE_LOCATION
                 ), MY_PERMISSION_CODE)
-            false
-        } else
-            true
+            return false
+        }
+        else
+            return true
     }
 
     //Override OnRequestPermissionResult
@@ -236,11 +263,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode){
             MY_PERMISSION_CODE-> {
-                if(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                if(grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
                 {
                     if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
                         if(checkLocationPermission()){
-                            mMap.isMyLocationEnabled = true
+                            mMap!!.isMyLocationEnabled = true
                         }
                 }
                 else {
@@ -257,11 +284,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         //Init Google Play Services
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                mMap.isMyLocationEnabled = true
+                mMap!!.isMyLocationEnabled = true
             }
         }
         else
-            mMap.isMyLocationEnabled = true
+            mMap!!.isMyLocationEnabled = true
 
         //Enable Zoom control
         mMap.uiSettings.isZoomGesturesEnabled=true
